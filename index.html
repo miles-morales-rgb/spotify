@@ -3,124 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spotify Clone - Miles Morales</title>
+    <title>Miles Morales Music</title>
     <style>
-        :root { --green: #1DB954; --black: #121212; --grey: #282828; }
-        body { background: #000; color: white; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        :root { --green: #1DB954; --black: #121212; --grey: #282828; --light-grey: #b3b3b3; }
+        body { background: #000; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Layout */
-        .container { display: flex; flex: 1; overflow: hidden; }
-        nav { width: 240px; background: black; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        main { flex: 1; background: linear-gradient(to bottom, #222, #121212); padding: 20px; overflow-y: auto; }
+        /* Layout Grid */
+        .app-container { display: flex; flex: 1; height: calc(100vh - 90px); }
+        
+        /* Sidebar */
+        aside { width: 260px; background: #000; padding: 24px; display: flex; flex-direction: column; gap: 20px; font-weight: bold; }
+        .nav-item { color: var(--light-grey); cursor: pointer; transition: 0.2s; }
+        .nav-item:hover { color: white; }
 
-        /* UI Elements */
-        .search-input { width: 100%; max-width: 350px; padding: 12px; border-radius: 25px; border: none; margin-bottom: 25px; outline: none; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 20px; }
-        .card { background: #181818; padding: 15px; border-radius: 10px; cursor: pointer; transition: 0.3s; }
-        .card:hover { background: var(--grey); }
-        .card img { width: 100%; border-radius: 5px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        /* Main Window */
+        main { flex: 1; background: linear-gradient(to bottom, #222, var(--black)); padding: 24px; overflow-y: auto; border-radius: 8px; margin-top: 8px; }
+        
+        .search-area { margin-bottom: 30px; position: sticky; top: 0; z-index: 10; }
+        #searchBox { width: 100%; max-width: 350px; padding: 12px 20px; border-radius: 20px; border: none; outline: none; font-size: 14px; }
+
+        /* Song Cards */
+        .song-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 24px; }
+        .card { background: #181818; padding: 16px; border-radius: 8px; cursor: pointer; transition: background 0.3s ease; position: relative; }
+        .card:hover { background: #282828; }
+        .card img { width: 100%; aspect-ratio: 1; border-radius: 4px; margin-bottom: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        .card-title { font-weight: bold; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-artist { color: var(--light-grey); font-size: 14px; }
 
         /* Player Bar */
-        footer { height: 100px; background: #000; border-top: 1px solid #333; display: flex; align-items: center; padding: 0 30px; justify-content: space-between; }
-        .play-btn { background: white; border: none; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; font-size: 18px; }
-        .progress-container { width: 40%; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-        input[type="range"] { width: 100%; accent-color: var(--green); cursor: pointer; }
+        footer { height: 90px; background: #000; border-top: 1px solid #282828; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
+        
+        .current-track { width: 30%; display: flex; align-items: center; gap: 15px; }
+        .player-controls { width: 40%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        
+        .btn-play { background: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .btn-play:hover { transform: scale(1.05); }
+
+        .progress-box { width: 100%; display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--light-grey); }
+        input[type="range"] { flex: 1; accent-color: var(--green); height: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <nav>
-        <h2 style="color:var(--green)">Spotify®</h2>
-        <div>Home</div>
-        <div>Search</div>
-        <div>Your Library</div>
-    </nav>
+<div class="app-container">
+    <aside>
+        <div style="font-size: 24px; color: white; margin-bottom: 10px;">Spotify®</div>
+        <div class="nav-item">🏠 Home</div>
+        <div class="nav-item">🔍 Search</div>
+        <div class="nav-item">📚 Your Library</div>
+    </aside>
 
     <main>
-        <input type="text" class="search-input" id="searchBox" placeholder="Search for songs..." onkeyup="search()">
-        <h2 id="view-title">All Songs</h2>
-        <div class="grid" id="songGrid"></div>
+        <div class="search-area">
+            <input type="text" id="searchBox" placeholder="Search for your music..." onkeyup="filterSongs()">
+        </div>
+        <h2 style="margin-bottom: 20px;">Your Tracks</h2>
+        <div class="song-grid" id="grid"></div>
     </main>
 </div>
 
 <footer>
-    <div id="trackInfo" style="width:250px">Select a song</div>
-    <div class="progress-container">
-        <button class="play-btn" id="masterPlay" onclick="togglePlay()">▶</button>
-        <input type="range" id="progressBar" value="0" min="0" step="1">
+    <div class="current-track">
+        <div id="trackName" style="font-weight: bold;">No song selected</div>
     </div>
-    <div style="width:250px; text-align:right">
-        Vol <input type="range" id="volBar" value="100" max="100" style="width:100px" oninput="setVol(this.value)">
+
+    <div class="player-controls">
+        <button class="btn-play" id="playBtn" onclick="togglePlay()">▶</button>
+        <div class="progress-box">
+            <span id="currentTime">0:00</span>
+            <input type="range" id="progress" value="0" min="0">
+            <span id="duration">0:00</span>
+        </div>
+    </div>
+
+    <div style="width: 30%; text-align: right;">
+        <span style="font-size: 12px; color: var(--light-grey);">Vol</span>
+        <input type="range" style="width: 100px;" oninput="changeVolume(this.value)">
     </div>
 </footer>
 
-<audio id="player"></audio>
+<audio id="audio"></audio>
 
 <script>
-    // LIST OF YOUR SONGS
-    const mySongs = [
+    // YOUR MUSIC DATA
+    const playlist = [
         { 
             title: "Heartbreak Feels Like", 
             artist: "JVKE", 
-            cover: "https://i.scdn.co/image/ab67616d0000b273902e9a60b565b77cb1d712d0", 
-            file: "https://raw.githubusercontent.com/miles-morales-rgb/Music/main/JVKE%20-%20this%20is%20what%20heartbreak%20feels%20like%20%28Official%20Lyric%20Video%29.mp3" 
+            cover: "https://i.scdn.co/image/ab67616d0000b2738a9ef9d45388046f481a5f6e", 
+            src: "https://raw.githubusercontent.com/miles-morales-rgb/Music/main/JVKE%20-%20this%20is%20what%20heartbreak%20feels%20like%20%28Official%20Lyric%20Video%29.mp3" 
         },
         { 
-            title: "This is what winter Feels Like", 
+            title: "Winter Feels Like", 
             artist: "JVKE", 
-            cover: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRiSEr5o4SSpaIiiern3MlDQAE0kiqKuhGKVlFY9pjm7g&s=10", 
-            file: "https://raw.githubusercontent.com/miles-morales-rgb/Music/main/JVKE%20-%20this%20is%20what%20winter%20feels%20like%20%28official%20lyric%20video%29.mp3" 
+            cover: "https://i.scdn.co/image/ab67616d0000b273f089851610e2f97f742f896d", 
+            src: "https://raw.githubusercontent.com/miles-morales-rgb/Music/main/JVKE%20-%20this%20is%20what%20winter%20feels%20like%20%28official%20lyric%20video%29.mp3" 
         }
-        // Add more songs here following the same format!
     ];
 
-    const player = document.getElementById('player');
-    const masterPlay = document.getElementById('masterPlay');
-    const progressBar = document.getElementById('progressBar');
+    const audio = document.getElementById('audio');
+    const playBtn = document.getElementById('playBtn');
+    const progress = document.getElementById('progress');
+    const grid = document.getElementById('grid');
 
-    function renderSongs(data) {
-        const grid = document.getElementById('songGrid');
-        grid.innerHTML = data.map((s, index) => `
-            <div class="card" onclick="playThis('${s.file}', '${s.title}')">
+    function displaySongs(songs) {
+        grid.innerHTML = songs.map(s => `
+            <div class="card" onclick="loadSong('${s.src}', '${s.title}')">
                 <img src="${s.cover}">
-                <div style="font-weight:bold">${s.title}</div>
-                <div style="color:gray; font-size:13px">${s.artist}</div>
+                <div class="card-title">${s.title}</div>
+                <div class="card-artist">${s.artist}</div>
             </div>
         `).join('');
     }
 
-    function playThis(url, title) {
-        player.src = url;
-        player.play();
-        document.getElementById('trackInfo').innerHTML = `<b>${title}</b>`;
-        masterPlay.innerText = "⏸";
+    function loadSong(url, title) {
+        audio.src = url;
+        audio.play();
+        document.getElementById('trackName').innerText = title;
+        playBtn.innerText = "⏸";
     }
 
     function togglePlay() {
-        if(player.paused) { player.play(); masterPlay.innerText = "⏸"; }
-        else { player.pause(); masterPlay.innerText = "▶"; }
+        if (!audio.src) return;
+        if (audio.paused) { audio.play(); playBtn.innerText = "⏸"; }
+        else { audio.pause(); playBtn.innerText = "▶"; }
     }
 
-    function search() {
-        const query = document.getElementById('searchBox').value.toLowerCase();
-        const filtered = mySongs.filter(s => s.title.toLowerCase().includes(query) || s.artist.toLowerCase().includes(query));
-        renderSongs(filtered);
+    function filterSongs() {
+        const q = document.getElementById('searchBox').value.toLowerCase();
+        const filtered = playlist.filter(s => s.title.toLowerCase().includes(q));
+        displaySongs(filtered);
     }
 
-    function setVol(v) { player.volume = v / 100; }
+    function changeVolume(v) { audio.volume = v / 100; }
 
-    player.ontimeupdate = () => {
-        progressBar.max = player.duration || 0;
-        progressBar.value = player.currentTime;
+    function formatTime(sec) {
+        let min = Math.floor(sec / 60);
+        let s = Math.floor(sec % 60);
+        return `${min}:${s < 10 ? '0'+s : s}`;
+    }
+
+    audio.ontimeupdate = () => {
+        progress.max = audio.duration || 0;
+        progress.value = audio.currentTime;
+        document.getElementById('currentTime').innerText = formatTime(audio.currentTime);
+        document.getElementById('duration').innerText = audio.duration ? formatTime(audio.duration) : "0:00";
     };
 
-    progressBar.oninput = () => { player.currentTime = progressBar.value; };
+    progress.oninput = () => { audio.currentTime = progress.value; };
 
     // Initial Load
-    renderSongs(mySongs);
+    displaySongs(playlist);
 </script>
-
 </body>
 </html>
-
